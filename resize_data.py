@@ -6,10 +6,13 @@ from tqdm import tqdm
 
 def resize_image(image_path, output_path, max_size=None, min_size=None, keep_format=False):
     with Image.open(image_path) as img:
-        # Convert image to RGB if it is not already
+        # Capture original format BEFORE converting
+        original_format = img.format.upper() if img.format else None
+
+        # Convert image to RGB
         img = img.convert('RGB')
 
-        # Determine the new size while maintaining the aspect ratio
+        # Determine new size maintaining aspect ratio
         if max_size is not None:
             ratio = min(max_size / img.width, max_size / img.height)
         elif min_size is not None:
@@ -20,21 +23,23 @@ def resize_image(image_path, output_path, max_size=None, min_size=None, keep_for
         new_size = (int(img.width * ratio), int(img.height * ratio))
         resized_img = img.resize(new_size, Image.Resampling.BILINEAR)
 
-        # Strip metadata by clearing the info dictionary
+        # Clear metadata
         resized_img.info = {}
 
-        # Determine the output format and extension
-        original_format = img.format.upper() if img.format else None
+        # Determine valid formats
         valid_formats = {'JPEG': 'jpg', 'PNG': 'png', 'BMP': 'bmp', 'GIF': 'gif'}
 
+        # Set the extension correctly
         if keep_format and original_format in valid_formats:
             extension = valid_formats[original_format]
+            save_format = original_format
         else:
-            extension = 'png'  # Default to PNG if format is unknown or not in the list
+            extension = 'png'
+            save_format = 'PNG'
 
         output_path = os.path.splitext(output_path)[0] + f'.{extension}'
 
-        save_params = {'format': original_format if keep_format and original_format in valid_formats else 'PNG'}
+        save_params = {'format': save_format}
         if extension == 'png':
             save_params.update({'optimize': True, 'compress_level': 9})
         elif extension == 'jpg':
